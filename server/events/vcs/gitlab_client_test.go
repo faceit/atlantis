@@ -298,7 +298,7 @@ func TestGitlabClient_UpdateStatus(t *testing.T) {
 			testServer := httptest.NewServer(
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					switch r.RequestURI {
-					case "/api/v4/projects/runatlantis%2Fatlantis/statuses/sha":
+					case "/api/v4/projects/runatlantis%2Fatlantis/statuses/67cb91d3f6198189f433c045154a885784ba6977":
 						gotRequest = true
 
 						body, err := io.ReadAll(r.Body)
