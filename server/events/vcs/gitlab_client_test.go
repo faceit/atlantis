@@ -337,7 +337,7 @@ func TestGitlabClient_UpdateStatus(t *testing.T) {
 				models.PullRequest{
 					Num:        1,
 					BaseRepo:   repo,
-					HeadCommit: "sha",
+					HeadCommit: "67cb91d3f6198189f433c045154a885784ba6977",
 					HeadBranch: "test",
 				}, c.status, "src", "description", "https://google.com")
 			Ok(t, err)
