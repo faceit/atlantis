@@ -157,7 +157,7 @@ jobs:
         image_type: [alpine, debian]
     env:
       # Set docker repo to either the fork or the main repo where the branch exists
-      DOCKER_REPO: ghcr.io/${{ github.repository }}
+      DOCKER_REPO: ghcr.io/runatlantis/atlantis
 
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
