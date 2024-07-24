@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	version "github.com/hashicorp/go-version"
+	"github.com/hashicorp/go-version"
 	"github.com/runatlantis/atlantis/server/events/command"
 	"github.com/runatlantis/atlantis/server/events/models"
 	"github.com/runatlantis/atlantis/server/logging"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
 
 	. "github.com/runatlantis/atlantis/testing"
 )
@@ -297,12 +297,12 @@ func TestGitlabClient_UpdateStatus(t *testing.T) {
 			testServer := httptest.NewServer(
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					switch r.RequestURI {
-					case "/api/v4/projects/runatlantis%2Fatlantis/statuses/sha":
+					case "/api/v4/projects/runatlantis%2Fatlantis/statuses/67cb91d3f6198189f433c045154a885784ba6977":
 						gotRequest = true
 
 						body, err := io.ReadAll(r.Body)
 						Ok(t, err)
-						exp := fmt.Sprintf(`{"state":"%s","ref":"patch-1-merger","context":"src","target_url":"https://google.com","description":"description"}`, c.expState)
+						exp := fmt.Sprintf(`{"state":"%s","context":"src","target_url":"https://google.com","description":"description","pipeline_id":488598}`, c.expState)
 						Equals(t, exp, string(body))
 						defer r.Body.Close()  // nolint: errcheck
 						w.Write([]byte("{}")) // nolint: errcheck
@@ -336,7 +336,7 @@ func TestGitlabClient_UpdateStatus(t *testing.T) {
 				models.PullRequest{
 					Num:        1,
 					BaseRepo:   repo,
-					HeadCommit: "sha",
+					HeadCommit: "67cb91d3f6198189f433c045154a885784ba6977",
 					HeadBranch: "test",
 				}, c.status, "src", "description", "https://google.com")
 			Ok(t, err)
@@ -387,13 +387,13 @@ func TestGitlabClient_UpdateStatusRetryable(t *testing.T) {
 			testServer := httptest.NewServer(
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					switch r.RequestURI {
-					case "/api/v4/projects/runatlantis%2Fatlantis/statuses/sha":
+					case "/api/v4/projects/runatlantis%2Fatlantis/statuses/67cb91d3f6198189f433c045154a885784ba6977":
 						handledNumberOfRequests++
 						shouldSendConflict := handledNumberOfRequests <= c.numberOfConflicts
 
 						body, err := io.ReadAll(r.Body)
 						Ok(t, err)
-						exp := fmt.Sprintf(`{"state":"%s","ref":"patch-1-merger","context":"src","target_url":"https://google.com","description":"description"}`, c.expState)
+						exp := fmt.Sprintf(`{"state":"%s","context":"src","target_url":"https://google.com","description":"description","pipeline_id":488598}`, c.expState)
 						Equals(t, exp, string(body))
 						defer r.Body.Close() // nolint: errcheck
 
@@ -436,12 +436,12 @@ func TestGitlabClient_UpdateStatusRetryable(t *testing.T) {
 				models.PullRequest{
 					Num:        1,
 					BaseRepo:   repo,
-					HeadCommit: "sha",
+					HeadCommit: "67cb91d3f6198189f433c045154a885784ba6977",
 					HeadBranch: "test",
 				}, c.status, "src", "description", "https://google.com")
 
 			if c.expError {
-				ErrContains(t, "failed to update commit status for 'runatlantis/atlantis' @ 'sha' to 'src' after 10 attempts", err)
+				ErrContains(t, "failed to update commit status for 'runatlantis/atlantis' @ '67cb91d3f6198189f433c045154a885784ba6977' to 'src' after 10 attempts", err)
 				ErrContains(t, "409", err)
 			} else {
 				Ok(t, err)

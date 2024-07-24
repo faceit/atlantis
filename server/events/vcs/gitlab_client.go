@@ -22,14 +22,14 @@ import (
 	"strings"
 	"time"
 
-	version "github.com/hashicorp/go-version"
+	"github.com/hashicorp/go-version"
 	"github.com/jpillora/backoff"
 	"github.com/pkg/errors"
 	"github.com/runatlantis/atlantis/server/events/command"
 	"github.com/runatlantis/atlantis/server/events/models"
 	"github.com/runatlantis/atlantis/server/events/vcs/common"
 	"github.com/runatlantis/atlantis/server/logging"
-	gitlab "github.com/xanzy/go-gitlab"
+	"github.com/xanzy/go-gitlab"
 )
 
 // gitlabMaxCommentLength is the maximum number of chars allowed by Gitlab in a
@@ -410,7 +410,8 @@ func (g *GitlabClient) UpdateStatus(logger logging.SimpleLogging, repo models.Re
 	// of the MR. This is needed because the commit status is only shown in the MR if the pipeline is
 	// assigned to an MR reference.
 	// Try to get the MR details a couple of times in case the pipeline is not yet assigned to the MR
-	refTarget := pull.HeadBranch
+	var refTarget *string
+	var pipelineID *int
 
 	retries := 1
 	delay := 2 * time.Second
@@ -425,7 +426,12 @@ func (g *GitlabClient) UpdateStatus(logger logging.SimpleLogging, repo models.Re
 		if mr.HeadPipeline != nil {
 			logger.Debug("Head pipeline found for merge request %d, source '%s'. refTarget '%s'",
 				pull.Num, mr.HeadPipeline.Source, mr.HeadPipeline.Ref)
-			refTarget = mr.HeadPipeline.Ref
+			// set pipeline ID for the req once found
+			pipelineID = gitlab.Ptr(mr.HeadPipeline.ID)
+			// if these are different then there is already a new commit so let's stop setting any statuses and return
+			if mr.HeadPipeline.SHA != pull.HeadCommit {
+				return errors.Errorf("mr.HeadPipeline.SHA: '%s' does not match pull.HeadCommit '%s'", mr.HeadPipeline.SHA, pull.HeadCommit)
+			}
 			break
 		}
 		if i != retries {
@@ -433,6 +439,8 @@ func (g *GitlabClient) UpdateStatus(logger logging.SimpleLogging, repo models.Re
 				pull.Num, delay)
 			time.Sleep(delay)
 		} else {
+			// set the ref target here if the pipeline wasn't found
+			refTarget = gitlab.Ptr(pull.HeadBranch)
 			logger.Debug("Head pipeline not found for merge request %d.",
 				pull.Num)
 		}
@@ -461,7 +469,9 @@ func (g *GitlabClient) UpdateStatus(logger logging.SimpleLogging, repo models.Re
 			Context:     gitlab.Ptr(src),
 			Description: gitlab.Ptr(description),
 			TargetURL:   &url,
-			Ref:         gitlab.Ptr(refTarget),
+			// only one of these should get sent in the request
+			PipelineID: pipelineID,
+			Ref:        refTarget,
 		})
 
 		if resp != nil {
