@@ -417,8 +417,8 @@ func (g *GitlabClient) UpdateStatus(logger logging.SimpleLogging, repo models.Re
 		TargetURL:   &url,
 	}
 
-	retries := 1
-	delay := 2 * time.Second
+	retries := 2
+	delay := 3 * time.Second
 	var commit *gitlab.Commit
 	var resp *gitlab.Response
 	var err error
